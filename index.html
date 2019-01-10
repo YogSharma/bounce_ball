@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Bounce Balls</title>
+	<style type="text/css">
+		
+		body{
+			width: 100%;
+			overflow: hidden;
+		}
+		canvas{
+			width: 70%;
+			overflow: hidden;
+			margin:20px;
+			border: 2px red inset;
+			box-shadow: 10px 10px 10px 10px black;
+		}
+
+	</style>
+</head>
+<body>
+	<p>Count</p>
+	<canvas></canvas>
+<script type="text/javascript">
+	var p = document.querySelector('p');
+	var counter = 0;
+	var timer = 0;
+	var animi;
+	var canvas = document.querySelector('canvas');
+	var ctx = canvas.getContext('2d');
+	var width = canvas.width = window.innerWidth;
+	var height = canvas.height = window.innerHeight;
+
+	function random(min, max){
+		var num = Math.floor(Math.random() * (max-min+1))+min;
+		return num;
+	}
+	function Shape(x, y, velx, vely, exists){
+		this.x = x;
+		this.y = y;
+		this.velx = velx;
+		this.vely = vely;
+		this.exists = exists;
+	}
+
+	function Ball(x, y, velx, vely, exists, color, size){
+		Shape.call(this, x, y, velx, vely, exists);
+		this.color = color;
+		this.size = size;
+	}
+
+	Ball.prototype = Object.create(Shape.prototype);
+	Ball.prototype.constructor = Ball;
+
+	Ball.prototype.drawBall = function(){
+		ctx.beginPath();
+		ctx.fillStyle = this.color;
+		ctx.arc(this.x, this.y, this.size, 0, 2*3.14);
+		ctx.fill();
+	}
+
+	Ball.prototype.updateBall = function(){
+		if(this.x - this.size >= width){
+			this.velx = -(this.velx);
+		}
+		if(this.y - this.size >= height){
+			this.vely = -(this.vely);
+		}
+		if(this.x - this.size <= 0){
+			this.velx = -(this.velx);
+		}
+		if(this.y - this.size <= 0){
+			this.vely = -(this.vely);
+		}
+		this.x += this.velx;
+		this.y += this.vely;
+	}
+
+	Ball.prototype.collisionDetection = function (){
+		for(var j = 0; j < balls.length; j++){
+			if (!(this === balls[j])) {
+			   var dx = this.x - balls[j].x;
+			   var dy = this.y - balls[j].y;
+			   var distance = Math.sqrt(dx * dx + dy * dy);
+			   if(distance < this.size + balls[j].size){
+			   		this.velx = -(this.velx);
+			   		this.vely = -(this.vely);
+			   		balls[j].velx = -(balls[j].velx);
+					balls[j].velY = -(balls[j].vely);
+					this.x += this.velx;
+			   		this.y += this.vely;
+			   		balls[j].x += balls[j].velx;
+			   		balls[j].y += balls[j].vely;
+			   }
+    		}
+		}
+	}
+
+	function EvilCircle(x, y, exists){
+		Shape.call(this, x, y, exists);
+	    this.color = 'black';
+	    this.size = 10;
+	    this.velx = 20;
+	    this.vely = 20;
+	}
+
+	EvilCircle.prototype = Object.create(Shape.prototype);
+	EvilCircle.prototype.constructor = EvilCircle;
+
+	EvilCircle.prototype.draw = function(){
+		ctx.beginPath();
+	    ctx.strokeStyle = this.color;
+	    ctx.lineWidth = 3;
+	    ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
+	    ctx.stroke();
+	}
+
+	EvilCircle.prototype.checkBounds = function(){
+			if ((this.x + this.size) >= width) {
+	        	this.x -= this.size;
+	   	 	}
+
+		    if ((this.x - this.size) <= 0) {
+		        this.x += this.size;
+		    }
+
+		    if ((this.y + this.size) >= height) {
+		        this.y -= this.size;
+		    }
+
+		    if ((this.y - this.size) <= 0) {
+		        this.y += this.size;
+		    }
+	}
+
+	EvilCircle.prototype.setControls = function(){
+		var key = this;
+		window.onkeydown = function(e){
+			if(e.keyCode == 37){
+				key.x -= key.velx;
+			}
+			if(e.keyCode == 39){
+				key.x += key.velx;
+			}
+			if(e.keyCode == 38){
+				key.y -= key.vely;
+			}
+			if(e.keyCode == 40){
+				key.y += key.vely;
+			}
+		}
+	}
+
+	EvilCircle.prototype.collisionDetection = function(){
+		for(var j = 0; j < balls.length; j++){
+			if(balls[j].exists === true){
+				var dx = this.x - balls[j].x;
+				var dy = this.y - balls[j].y;
+				var distance = Math.sqrt(dx * dx + dy * dy);
+				if(distance <= this.size + balls[j].size){
+					counter ++;
+					this.size = this.size;
+					balls[j].exists = false;
+					p.textContent = counter;
+				}
+			}
+		}
+	}
+	
+	var balls = [];
+
+	var evilCircle = new EvilCircle(100,100,true);
+	evilCircle.setControls();
+
+	function loop(){
+		ctx.fillStyle = "lightgrey";
+		ctx.fillRect(0, 0, width, height);
+		while(balls.length < 20){
+			var size = random(15,25);
+			var ball = new Ball(
+				random(size, width-size),
+				random(size, height-size),
+				random(-7,7),
+				random(-7,7),
+				true,
+				'blue',
+				size,
+			);
+			balls.push(ball);
+		}
+		for(var i = 0; i < balls.length; i++){
+			if(balls[i].exists == true){
+				balls[i].drawBall();
+				balls[i].updateBall();
+				balls[i].collisionDetection();
+			}
+		}
+		evilCircle.draw();
+		evilCircle.checkBounds();
+		evilCircle.collisionDetection();
+		animi = window.requestAnimationFrame(loop);
+	}
+
+	var set = window.setInterval(tim,1000);
+		function tim(){
+			timer ++;
+			if(timer > 25){
+				window.clearInterval(set);
+				window.cancelAnimationFrame(animi);
+				alert('Your Score : '+counter);
+				balls = [];
+				counter = 0;
+				p.textContent = counter;
+				loop();
+				timer = 0;
+				set = window.setInterval(tim,1000);
+				}
+			}
+loop();
+
+</script>
+</body>
+</html>
